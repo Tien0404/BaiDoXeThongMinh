@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bãi đỗ xe thông minh</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    /* Base styles */
+    :root {
+      --color-primary: #0070f3;
+      --color-primary-dark: #0050b3;
+      --color-secondary: #00b0ff;
+      --color-accent: #00e5ff;
+      --color-available: #43a047;
+      --color-occupied: #e53935;
+      --color-error: #ff9800;
+      --color-background-dark: #000051;
+      --color-background-light: #1a237e;
+      --color-text: #ffffff;
+      --color-text-secondary: #90caf9;
+      --color-border: rgba(59, 130, 246, 0.2);
+      --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.1);
+      --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.15);
+      --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.2);
+      --shadow-glow: 0 0 30px rgba(59, 130, 246, 0.5);
+      --transition-fast: 0.2s ease;
+      --transition-normal: 0.3s ease;
+      --transition-slow: 0.5s ease;
+      --border-radius-sm: 8px;
+      --border-radius-md: 16px;
+      --border-radius-lg: 24px;
+      --border-radius-full: 9999px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      color: var(--color-text);
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+      background-color: var(--color-background-dark);
+    }
+
+    /* Canvas background */
+    #background-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -10;
+    }
+
+    /* Container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    /* Header */
+    .header {
+      position: relative;
+      overflow: hidden;
+      padding: 2rem 1rem;
+      text-align: center;
+      z-index: 1;
+    }
+
+    .header-glow {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 200%;
+      height: 500px;
+      border-radius: 100%;
+      background-color: rgba(59, 130, 246, 0.1);
+      filter: blur(60px);
+      z-index: -1;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(to right, #4dabf7, #00e5ff);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      display: inline-block;
+      animation: fadeInDown 1s ease-out;
+    }
+
+    .header-icon {
+      margin-right: 0.5rem;
+      color: #4dabf7;
+    }
+
+    .header-stats {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+      font-size: 1.1rem;
+    }
+
+    .stat-pill {
+      background-color: rgba(25, 118, 210, 0.4);
+      backdrop-filter: blur(4px);
+      padding: 0.3rem 1rem;
+      border-radius: var(--border-radius-full);
+    }
+
+    .free-slots {
+      font-weight: bold;
+      color: var(--color-accent);
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .tabs-container {
+      background-color: rgba(25, 118, 210, 0.3);
+      backdrop-filter: blur(8px);
+      border-radius: var(--border-radius-full);
+      padding: 0.25rem;
+      display: flex;
+    }
+
+    .tab-button {
+      padding: 0.5rem 1rem;
+      border-radius: var(--border-radius-full);
+      border: none;
+      background: none;
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      transition: all var(--transition-normal);
+      font-family: inherit;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+    }
+
+    .tab-button.active {
+      background-color: var(--color-primary);
+      color: white;
+      box-shadow: var(--shadow-md);
+    }
+
+    .tab-button:hover:not(.active) {
+      background-color: rgba(25, 118, 210, 0.5);
+    }
+
+    .tab-icon {
+      margin-right: 0.5rem;
+    }
+
+    /* Tab content */
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    /* Slots grid */
+    .slots-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .slot {
+      position: relative;
+      background-color: rgba(25, 118, 210, 0.2);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--color-border);
+      border-radius: var(--border-radius-lg);
+      padding: 1.5rem;
+      text-align: center;
+      overflow: hidden;
+      transition: all var(--transition-normal);
+    }
+
+    .slot:hover {
+      transform: translateY(-5px) scale(1.02);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .slot-hover-effect {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to right, rgba(59, 130, 246, 0), rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0));
+      opacity: 0;
+      transition: opacity var(--transition-slow);
+    }
+
+    .slot:hover .slot-hover-effect {
+      opacity: 1;
+    }
+
+    .slot h2 {
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+      color: var(--color-accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .slot-status {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      border-radius: var(--border-radius-md);
+      font-weight: bold;
+      box-shadow: var(--shadow-md);
+    }
+
+    .slot-status.available {
+      background: linear-gradient(to right, #43a047, #2e7d32);
+    }
+
+    .slot-status.occupied {
+      background: linear-gradient(to right, #e53935, #c62828);
+    }
+
+    .slot-status.error {
+      background: linear-gradient(to right, #ff9800, #e65100);
+    }
+
+    .slot-status i {
+      margin-right: 0.5rem;
+    }
+
+    .slot-indicator {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--color-accent);
+      animation: pulse 2s infinite;
+    }
+
+    .slot-indicator.top-right {
+      top: 0.5rem;
+      right: 0.5rem;
+    }
+
+    .slot-indicator.bottom-left {
+      bottom: 0.5rem;
+      left: 0.5rem;
+      animation-delay: 0.5s;
+    }
+
+    /* Stats grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      position: relative;
+      background-color: rgba(25, 118, 210, 0.2);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--color-border);
+      border-radius: var(--border-radius-lg);
+      padding: 1.5rem;
+      overflow: hidden;
+    }
+
+    .stat-card h3 {
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+      color: var(--color-accent);
+      display: flex;
+      align-items: center;
+    }
+
+    .stat-card h3 i {
+      margin-right: 0.5rem;
+    }
+
+    .stat-glow {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background-color: rgba(59, 130, 246, 0.1);
+      filter: blur(20px);
+    }
+
+    .stat-glow.top-right {
+      top: 1rem;
+      right: 1rem;
+    }
+
+    .stat-glow.bottom-left {
+      bottom: 1rem;
+      left: 1rem;
+      background-color: rgba(0, 229, 255, 0.1);
+    }
+
+    /* Occupancy rate */
+    .occupancy-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      margin: 1rem 0;
+    }
+
+    .circle-progress {
+      position: relative;
+      width: 160px;
+      height: 160px;
+    }
+
+    .circle-bg, .circle-progress-bar {
+      fill: none;
+      stroke-width: 10;
+      transform: rotate(-90deg);
+      transform-origin: center;
+    }
+
+    .circle-bg {
+      stroke: rgba(25, 118, 210, 0.5);
+    }
+
+    .circle-progress-bar {
+      stroke: var(--color-accent);
+      stroke-linecap: round;
+      filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.7));
+      transition: stroke-dasharray 1s ease-in-out;
+    }
+
+    .circle-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+
+    .circle-text .percentage {
+      font-size: 2rem;
+      font-weight: bold;
+    }
+
+    .circle-text .label {
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+    }
+
+    .occupancy-details {
+      text-align: center;
+      color: var(--color-text-secondary);
+      margin-top: 0.5rem;
+    }
+
+    /* Peak hours */
+    .peak-hours-container {
+      height: 200px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      padding: 0 0.5rem;
+      margin-top: 1rem;
+    }
+
+    .hour-bar {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .bar {
+      width: 32px;
+      border-radius: 4px 4px 0 0;
+      background: linear-gradient(to top, var(--color-primary), var(--color-accent));
+      position: relative;
+      overflow: hidden;
+      transition: height 1s ease-out;
+    }
+
+    .bar-glow {
+      position: absolute;
+      inset: 0;
+      background-color: rgba(255, 255, 255, 0.2);
+      animation: pulse 2s infinite;
+    }
+
+    .hour-label {
+      margin-top: 0.5rem;
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+    }
+
+    /* Daily entries */
+    .daily-entries-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 2rem;
+      margin: 1.5rem 0;
+    }
+
+    .entry-stat {
+      text-align: center;
+    }
+
+    .entry-value {
+      font-size: 2.5rem;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+
+    .entry-label {
+      color: var(--color-text-secondary);
+    }
+
+    .divider {
+      width: 1px;
+      height: 64px;
+      background-color: rgba(59, 130, 246, 0.3);
+    }
+
+    /* Average duration */
+    .duration-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 1.5rem 0;
+    }
+
+    .duration-display {
+      text-align: center;
+    }
+
+    .duration-time {
+      font-size: 3rem;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+
+    .duration-label {
+      color: var(--color-text-secondary);
+    }
+
+    /* Activity logs */
+    .logs-section {
+      background-color: rgba(25, 118, 210, 0.2);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--color-border);
+      border-radius: var(--border-radius-lg);
+      padding: 1.5rem;
+      margin-top: 2rem;
+      margin-bottom: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .logs-section h2 {
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+      color: var(--color-accent);
+      display: flex;
+      align-items: center;
+    }
+
+    .logs-section h2 i {
+      margin-right: 0.5rem;
+    }
+
+    .logs-container {
+      max-height: 320px;
+      overflow-y: auto;
+      padding-right: 0.5rem;
+    }
+
+    /* Custom scrollbar */
+    .logs-container::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .logs-container::-webkit-scrollbar-track {
+      background: rgba(30, 58, 138, 0.2);
+      border-radius: var(--border-radius-full);
+    }
+
+    .logs-container::-webkit-scrollbar-thumb {
+      background-color: #1d4ed8;
+      border-radius: var(--border-radius-full);
+    }
+
+    .log-item {
+      background-color: rgba(25, 118, 210, 0.3);
+      backdrop-filter: blur(4px);
+      border-radius: var(--border-radius-md);
+      padding: 0.75rem;
+      margin-bottom: 0.5rem;
+      border-left: 4px solid transparent;
+      transition: transform var(--transition-normal);
+    }
+
+    .log-item:hover {
+      transform: translateX(5px);
+    }
+
+    .log-content {
+      display: flex;
+      align-items: center;
+    }
+
+    .log-time {
+      color: var(--color-text-secondary);
+      display: flex;
+      align-items: center;
+    }
+
+    .log-time i {
+      margin-right: 0.25rem;
+      font-size: 0.75rem;
+    }
+
+    .log-separator {
+      margin: 0 0.5rem;
+      color: rgba(59, 130, 246, 0.5);
+    }
+
+    .log-message {
+      display: flex;
+      align-items: center;
+    }
+
+    .log-message i {
+      margin-right: 0.25rem;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 2rem;
+      color: var(--color-text-secondary);
+    }
+
+    .loading i {
+      margin-right: 0.5rem;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes fadeInDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes pulse {
+      0% { opacity: 0.6; }
+      50% { opacity: 1; }
+      100% { opacity: 0.6; }
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .header h1 {
+        font-size: 1.75rem;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .daily-entries-container {
+        gap: 1rem;
+      }
+
+      .entry-value {
+        font-size: 2rem;
+      }
+
+      .duration-time {
+        font-size: 2.5rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .header h1 {
+        font-size: 1.5rem;
+      }
+
+      .header-stats {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .tab-button {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+      }
+
+      .slots-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Background canvas -->
+  <canvas id="background-canvas"></canvas>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-glow"></div>
+    <div class="container">
+      <h1><i class="fas fa-parking header-icon"></i> BÃI ĐỖ XE THÔNG MINH NHÓM 8</h1>
+      <div class="header-stats">
+        <div class="stat-pill">Tổng chỗ: <span id="total-slots">4</span></div>
+        <div class="stat-pill">Chỗ trống: <span id="free-slots" class="free-slots">4</span></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main content -->
+  <main class="container">
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tabs-container">
+        <button class="tab-button active" data-tab="slots">
+          <i class="fas fa-car tab-icon"></i> Vị trí đỗ xe
+        </button>
+        <button class="tab-button" data-tab="stats">
+          <i class="fas fa-chart-pie tab-icon"></i> Thống kê
+        </button>
+      </div>
+    </div>
+
+    <!-- Slots tab -->
+    <div id="slots-tab" class="tab-content active">
+      <div class="slots-grid" id="slots-container">
+        <!-- Slots will be generated here -->
+      </div>
+    </div>
+
+    <!-- Stats tab -->
+    <div id="stats-tab" class="tab-content">
+      <div class="stats-grid">
+        <!-- Occupancy rate -->
+        <div class="stat-card">
+          <h3><i class="fas fa-chart-pie"></i> Tỷ lệ lấp đầy</h3>
+          <div class="occupancy-container">
+            <div class="circle-progress">
+              <svg width="160" height="160" viewBox="0 0 100 100">
+                <circle class="circle-bg" cx="50" cy="50" r="40"></circle>
+                <circle class="circle-progress-bar" id="occupancy-progress" cx="50" cy="50" r="40" stroke-dasharray="0 251"></circle>
+              </svg>
+              <div class="circle-text">
+                <div class="percentage" id="occupancy-percentage">0%</div>
+                <div class="label">Đã sử dụng</div>
+              </div>
+            </div>
+          </div>
+          <div class="occupancy-details" id="occupancy-details">
+            0 / 4 vị trí đang được sử dụng
+          </div>
+          <div class="stat-glow top-right"></div>
+        </div>
+
+        <!-- Peak hours -->
+        <div class="stat-card">
+          <h3><i class="fas fa-chart-bar"></i> Giờ cao điểm</h3>
+          <div class="peak-hours-container" id="peak-hours-container">
+            <!-- Peak hours bars will be generated here -->
+          </div>
+          <div class="stat-glow bottom-left"></div>
+        </div>
+
+        <!-- Daily entries -->
+        <div class="stat-card">
+          <h3><i class="fas fa-exchange-alt"></i> Hoạt động hôm nay</h3>
+          <div class="daily-entries-container">
+            <div class="entry-stat">
+              <div class="entry-value" id="entries-count">0</div>
+              <div class="entry-label">Lượt vào</div>
+            </div>
+            <div class="divider"></div>
+            <div class="entry-stat">
+              <div class="entry-value" id="exits-count">0</div>
+              <div class="entry-label">Lượt ra</div>
+            </div>
+          </div>
+          <div class="stat-glow top-right"></div>
+        </div>
+
+        <!-- Average duration -->
+        <div class="stat-card">
+          <h3><i class="fas fa-clock"></i> Thời gian đỗ trung bình</h3>
+          <div class="duration-container">
+            <div class="duration-display">
+              <div class="duration-time" id="avg-duration">0:00</div>
+              <div class="duration-label">Giờ : Phút</div>
+            </div>
+          </div>
+          <div class="stat-glow bottom-left"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Activity logs -->
+    <div class="logs-section">
+      <h2><i class="fas fa-history"></i> NHẬT KÝ RA/VÀO</h2>
+      <div class="logs-container" id="logs-container">
+        <div class="loading">
+          <i class="fas fa-spinner fa-spin"></i> Đang tải nhật ký...
+        </div>
+      </div>
+      <div class="stat-glow top-right"></div>
+    </div>
+  </main>
+
+  <script>
+    // Configuration
+    const CONFIG = {
+      API_BASE: "http://192.168.41.171", // ESP32 IP
+      UPDATE_INTERVAL: 2000, // Update every 2 seconds
+      TOTAL_SLOTS: 4,
+    };
+
+    // State
+    let state = {
+      status: {},
+      logs: [],
+      lastUpdate: 0,
+      freeSlots: CONFIG.TOTAL_SLOTS,
+      stats: {
+        occupancyRate: 0,
+        averageDuration: 0,
+        peakHours: Array.from({ length: 6 }, (_, i) => ({ hour: i + 8, count: Math.floor(Math.random() * 20) })),
+        dailyEntries: 0
+      }
+    };
+
+    // DOM Elements
+    const elements = {
+      canvas: document.getElementById('background-canvas'),
+      totalSlots: document.getElementById('total-slots'),
+      freeSlots: document.getElementById('free-slots'),
+      slotsContainer: document.getElementById('slots-container'),
+      logsContainer: document.getElementById('logs-container'),
+      tabButtons: document.querySelectorAll('.tab-button'),
+      tabContents: document.querySelectorAll('.tab-content'),
+      occupancyProgress: document.getElementById('occupancy-progress'),
+      occupancyPercentage: document.getElementById('occupancy-percentage'),
+      occupancyDetails: document.getElementById('occupancy-details'),
+      peakHoursContainer: document.getElementById('peak-hours-container'),
+      entriesCount: document.getElementById('entries-count'),
+      exitsCount: document.getElementById('exits-count'),
+      avgDuration: document.getElementById('avg-duration')
+    };
+
+    // Initialize
+    function init() {
+      // Set total slots
+      elements.totalSlots.textContent = CONFIG.TOTAL_SLOTS;
+      
+      // Initialize slots
+      initSlots();
+      
+      // Initialize peak hours
+      initPeakHours();
+      
+      // Initialize background canvas
+      initCanvas();
+      
+      // Initialize tabs
+      initTabs();
+      
+      // Start data updates
+      updateData();
+      setInterval(updateData, CONFIG.UPDATE_INTERVAL);
+      
+      // Set random average duration
+      updateAvgDuration();
+      
+      // Warning when internet connection is lost
+      window.addEventListener("offline", () => {
+        alert("Internet connection lost! Trying to reconnect...");
+      });
+    }
+
+    // Initialize slots
+    function initSlots() {
+      elements.slotsContainer.innerHTML = '';
+      
+      for (let i = 1; i <= CONFIG.TOTAL_SLOTS; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'slot';
+        slot.dataset.slot = i;
+        
+        slot.innerHTML = `
+          <div class="slot-hover-effect"></div>
+          <h2><i class="fas fa-car"></i> VỊ TRÍ ${i}</h2>
+          <div class="slot-status">
+            <i class="fas fa-spinner fa-spin"></i> ĐANG KẾT NỐI...
+          </div>
+          <div class="slot-indicator top-right"></div>
+          <div class="slot-indicator bottom-left"></div>
+        `;
+        
+        elements.slotsContainer.appendChild(slot);
+      }
+    }
+
+    // Initialize peak hours
+    function initPeakHours() {
+      elements.peakHoursContainer.innerHTML = '';
+      
+      state.stats.peakHours.forEach(hour => {
+        const height = (hour.count / 20) * 100;
+        
+        const hourBar = document.createElement('div');
+        hourBar.className = 'hour-bar';
+        
+        hourBar.innerHTML = `
+          <div class="bar" style="height: ${height}%">
+            <div class="bar-glow"></div>
+          </div>
+          <div class="hour-label">${hour.hour}:00</div>
+        `;
+        
+        elements.peakHoursContainer.appendChild(hourBar);
+      });
+    }
+
+    // Initialize tabs
+    function initTabs() {
+      elements.tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const tabName = button.dataset.tab;
+          
+          // Update active tab button
+          elements.tabButtons.forEach(btn => {
+            btn.classList.remove('active');
+          });
+          button.classList.add('active');
+          
+          // Update active tab content
+          elements.tabContents.forEach(content => {
+            content.classList.remove('active');
+          });
+          document.getElementById(`${tabName}-tab`).classList.add('active');
+        });
+      });
+    }
+
+    // Initialize canvas and particles
+    function initCanvas() {
+      const canvas = elements.canvas;
+      const ctx = canvas.getContext('2d');
+      let particles = [];
+      
+      // Set canvas size
+      function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        // Reinitialize particles
+        particles = [];
+        for (let i = 0; i < 50; i++) {
+          particles.push(new Particle());
+        }
+      }
+      
+      // Particle class
+      class Particle {
+        constructor() {
+          this.x = Math.random() * canvas.width;
+          this.y = Math.random() * canvas.height;
+          this.size = Math.random() * 3 + 1;
+          this.speedX = (Math.random() - 0.5) * 1;
+          this.speedY = (Math.random() - 0.5) * 1;
+          
+          // Celestial color palette
+          const colors = [
+            'rgba(135, 206, 250, 0.7)',
+            'rgba(176, 224, 230, 0.7)',
+            'rgba(173, 216, 230, 0.7)',
+            'rgba(135, 206, 235, 0.7)'
+          ];
+          this.color = colors[Math.floor(Math.random() * colors.length)];
+        }
+        
+        update() {
+          this.x += this.speedX;
+          this.y += this.speedY;
+          
+          if (this.x > canvas.width || this.x < 0) {
+            this.speedX = -this.speedX;
+          }
+          
+          if (this.y > canvas.height || this.y < 0) {
+            this.speedY = -this.speedY;
+          }
+        }
+        
+        draw() {
+          ctx.fillStyle = this.color;
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+          ctx.fill();
+          
+          // Add glow effect
+          ctx.shadowBlur = 15;
+          ctx.shadowColor = this.color;
+        }
+      }
+      
+      // Animation loop
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Create radial gradient background
+        const gradient = ctx.createRadialGradient(
+          canvas.width / 2, 
+          canvas.height / 2, 
+          0, 
+          canvas.width / 2, 
+          canvas.height / 2, 
+          canvas.width
+        );
+        gradient.addColorStop(0, '#1a237e');
+        gradient.addColorStop(1, '#000051');
+        
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw and update particles
+        particles.forEach(particle => {
+          particle.update();
+          particle.draw();
+        });
+        
+        // Draw connecting lines between particles
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+        ctx.lineWidth = 0.5;
+        
+        for (let i = 0; i < particles.length; i++) {
+          for (let j = i + 1; j < particles.length; j++) {
+            const dx = particles[i].x - particles[j].x;
+            const dy = particles[i].y - particles[j].y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance < 100) {
+              ctx.beginPath();
+              ctx.moveTo(particles[i].x, particles[i].y);
+              ctx.lineTo(particles[j].x, particles[j].y);
+              ctx.stroke();
+            }
+          }
+        }
+        
+        requestAnimationFrame(animate);
+      }
+      
+      // Initialize canvas
+      resizeCanvas();
+      window.addEventListener('resize', resizeCanvas);
+      animate();
+    }
+
+    // Fetch data from API
+    async function fetchData(endpoint) {
+      try {
+        const response = await fetch(`${CONFIG.API_BASE}/${endpoint}`);
+        if (!response.ok) throw new Error("Connection error");
+        return await response.json();
+      } catch (error) {
+        console.error(`Error fetching ${endpoint}:`, error);
+        return null;
+      }
+    }
+
+    // Update data
+    async function updateData() {
+      try {
+        const [statusData, logsData] = await Promise.all([
+          fetchData("getStatus"),
+          fetchData(`getLogs?since=${state.lastUpdate}`),
+        ]);
+
+        // Update slots
+        if (statusData) {
+          state.status = statusData;
+          updateSlots(statusData);
+          
+          // Update free slots
+          const occupied = Object.values(statusData).filter(v => v).length;
+          state.freeSlots = CONFIG.TOTAL_SLOTS - occupied;
+          elements.freeSlots.textContent = state.freeSlots;
+          
+          // Update occupancy rate
+          state.stats.occupancyRate = (occupied / CONFIG.TOTAL_SLOTS) * 100;
+          updateOccupancyRate();
+          
+          // Update occupancy details
+          elements.occupancyDetails.textContent = `${occupied} / ${CONFIG.TOTAL_SLOTS} vị trí đang được sử dụng`;
+        }
+
+        // Update logs
+        if (logsData && logsData.length > 0) {
+          // Add new logs to state
+          state.logs = [...logsData, ...state.logs].slice(0, 20);
+          
+          // Update last update timestamp
+          state.lastUpdate = logsData[0].t || logsData[0].timestamp;
+          
+          // Update logs display
+          updateLogs();
+          
+          // Update daily entries
+          state.stats.dailyEntries += logsData.length;
+          elements.entriesCount.textContent = state.stats.dailyEntries;
+          elements.exitsCount.textContent = Math.round(state.stats.dailyEntries * 0.9);
+        }
+      } catch (error) {
+        console.error("Update error:", error);
+      }
+    }
+
+    // Update slots display
+    function updateSlots(statusData) {
+      for (let i = 1; i <= CONFIG.TOTAL_SLOTS; i++) {
+        const slotElement = document.querySelector(`[data-slot="${i}"]`);
+        const statusElement = slotElement.querySelector('.slot-status');
+        const isOccupied = statusData[`slot${i}`];
+        
+        let statusClass, statusIcon, statusText;
+        
+        if (isOccupied === true) {
+          statusClass = "occupied";
+          statusIcon = "fas fa-car";
+          statusText = "CÓ XE";
+        } else if (isOccupied === false) {
+          statusClass = "available";
+          statusIcon = "fas fa-check-circle";
+          statusText = "TRỐNG";
+        } else {
+          statusClass = "error";
+          statusIcon = "fas fa-exclamation-triangle";
+          statusText = "LỖI KẾT NỐI";
+        }
+        
+        // Remove all status classes
+        statusElement.classList.remove('available', 'occupied', 'error');
+        
+        // Add new status class
+        statusElement.classList.add(statusClass);
+        
+        // Update content
+        statusElement.innerHTML = `<i class="${statusIcon}"></i> ${statusText}`;
+      }
+    }
+
+    // Update logs display
+    function updateLogs() {
+      // Clear loading message if present
+      if (elements.logsContainer.querySelector('.loading')) {
+        elements.logsContainer.innerHTML = '';
+      }
+      
+      // Create log items
+      state.logs.forEach(log => {
+        // Format time
+        const timeStr = log.formatted
+          ? log.formatted
+          : new Date((log.t || log.timestamp || 0) * 1000).toLocaleTimeString("vi-VN");
+        
+        // Format message
+        let message = log.m
+          ? log.m.replace("cong", "cổng").replace("slot", "vị trí ")
+          : log.message || "";
+        
+        // Get log color and icon
+        const color = getLogColor(message);
+        const icon = getLogIcon(message);
+        
+        // Create log item
+        const logItem = document.createElement('div');
+        logItem.className = 'log-item';
+        logItem.style.borderLeftColor = color;
+        logItem.style.animation = 'fadeIn 0.5s';
+        
+        logItem.innerHTML = `
+          <div class="log-content">
+            <span class="log-time">
+              <i class="fas fa-clock"></i> ${timeStr}
+            </span>
+            <span class="log-separator">|</span>
+            <span class="log-message" style="color: ${color}">
+              <i class="${icon}"></i> ${message}
+            </span>
+          </div>
+        `;
+        
+        // Add to container (at the beginning)
+        if (elements.logsContainer.firstChild) {
+          elements.logsContainer.insertBefore(logItem, elements.logsContainer.firstChild);
+        } else {
+          elements.logsContainer.appendChild(logItem);
+        }
+        
+        // Remove animation after it completes
+        setTimeout(() => {
+          logItem.style.animation = '';
+        }, 500);
+      });
+      
+      // Limit to 20 logs
+      const logItems = elements.logsContainer.querySelectorAll('.log-item');
+      if (logItems.length > 20) {
+        for (let i = 20; i < logItems.length; i++) {
+          elements.logsContainer.removeChild(logItems[i]);
+        }
+      }
+    }
+
+    // Get log color based on message
+    function getLogColor(message) {
+      const lowerMsg = message.toLowerCase();
+      
+      if (lowerMsg.includes("vao cong")) {
+        return "#e53935";
+      } else if (lowerMsg.includes("ra cong")) {
+        return "#43a047";
+      } else if (lowerMsg.includes("vao vi tri")) {
+        return "#e53935";
+      } else if (lowerMsg.includes("ra khoi vi tri")) {
+        return "#43a047";
+      }
+      return "#90caf9";
+    }
+
+    // Get log icon based on message
+    function getLogIcon(message) {
+      const lowerMsg = message.toLowerCase();
+      
+      if (lowerMsg.includes("vao")) {
+        return "fas fa-sign-in-alt";
+      } else if (lowerMsg.includes("ra")) {
+        return "fas fa-sign-out-alt";
+      }
+      return "fas fa-info-circle";
+    }
+
+    // Update occupancy rate
+    function updateOccupancyRate() {
+      const percentage = Math.round(state.stats.occupancyRate);
+      const circumference = 2 * Math.PI * 40;
+      const dashArray = (percentage / 100) * circumference;
+      
+      elements.occupancyProgress.style.strokeDasharray = `${dashArray} ${circumference}`;
+      elements.occupancyPercentage.textContent = `${percentage}%`;
+    }
+
+    // Update average duration (random for demo)
+    function updateAvgDuration() {
+      const hours = Math.floor(Math.random() * 3) + 1;
+      const minutes = Math.floor(Math.random() * 60).toString().padStart(2, '0');
+      elements.avgDuration.textContent = `${hours}:${minutes}`;
+    }
+
+    // Initialize the application
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
+
