@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Bãi đỗ xe thông minh</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap");
+
+      :root {
+        --color-available: #4caf50;
+        --color-occupied: #f44336;
+        --color-error: #ff9800;
+        --color-primary: #2196f3;
+        --color-primary-dark: #1976d2;
+        --color-background: #f8f9fa;
+        --color-card: #ffffff;
+        --color-text: #333333;
+        --color-text-secondary: #666666;
+        --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.15);
+        --transition-fast: 0.2s ease;
+        --transition-normal: 0.3s ease;
+        --transition-slow: 0.5s ease;
+        --border-radius-sm: 8px;
+        --border-radius-md: 12px;
+        --border-radius-lg: 20px;
+      }
+
+      /* Kiểu dáng chung */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Roboto", sans-serif;
+        background-color: var(--color-background);
+        color: var(--color-text);
+        line-height: 1.6;
+        padding: 0;
+        margin: 0;
+        min-height: 100vh;
+        background-image: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        transition: background-color var(--transition-normal);
+      }
+
+      .header {
+        background: linear-gradient(
+          135deg,
+          var(--color-primary) 0%,
+          var(--color-primary-dark) 100%
+        );
+        color: white;
+        padding: 2rem;
+        border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
+        margin-bottom: 2rem;
+        text-align: center;
+        box-shadow: var(--shadow-md);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .header::before {
+        content: "";
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(
+          circle,
+          rgba(255, 255, 255, 0.1) 0%,
+          rgba(255, 255, 255, 0) 70%
+        );
+        transform: rotate(30deg);
+        pointer-events: none;
+      }
+
+      .header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        letter-spacing: 1px;
+        animation: fadeInDown 1s ease-out;
+      }
+
+      .header p {
+        margin: 10px 0 0;
+        font-size: 1.2rem;
+        opacity: 0.9;
+        animation: fadeInUp 1s ease-out;
+      }
+
+      #free-slots {
+        font-weight: bold;
+        background-color: rgba(255, 255, 255, 0.2);
+        padding: 0.2rem 0.8rem;
+        border-radius: var(--border-radius-sm);
+        transition: all var(--transition-normal);
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 1.5rem;
+        animation: fadeIn 1s ease-out;
+      }
+
+      /* Giao diện các slot */
+      .slots {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2.5rem;
+      }
+
+      .slot {
+        background: var(--color-card);
+        border-radius: var(--border-radius-md);
+        padding: 2rem;
+        text-align: center;
+        box-shadow: var(--shadow-sm);
+        transition: all var(--transition-normal);
+        position: relative;
+        overflow: hidden;
+        z-index: 1;
+      }
+
+      .slot::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 0.1) 0%,
+          rgba(255, 255, 255, 0) 100%
+        );
+        z-index: -1;
+        opacity: 0;
+        transition: opacity var(--transition-normal);
+      }
+
+      .slot:hover {
+        transform: translateY(-10px);
+        box-shadow: var(--shadow-lg);
+      }
+
+      .slot:hover::before {
+        opacity: 1;
+      }
+
+      .slot h2 {
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+        color: var(--color-primary-dark);
+        position: relative;
+        display: inline-block;
+      }
+
+      .slot h2::after {
+        content: "";
+        position: absolute;
+        bottom: -8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 3px;
+        background: var(--color-primary);
+        transition: width var(--transition-normal);
+      }
+
+      .slot:hover h2::after {
+        width: 80%;
+      }
+
+      .status {
+        font-weight: bold;
+        padding: 0.8rem 1.2rem;
+        border-radius: var(--border-radius-sm);
+        margin-top: 1.5rem;
+        display: inline-block;
+        transition: all var(--transition-normal);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .status::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          rgba(255, 255, 255, 0) 0%,
+          rgba(255, 255, 255, 0.2) 50%,
+          rgba(255, 255, 255, 0) 100%
+        );
+        transition: all 0.8s ease;
+      }
+
+      .slot:hover .status::before {
+        left: 100%;
+      }
+
+      .available {
+        background: linear-gradient(
+          135deg,
+          var(--color-available) 0%,
+          #2e7d32 100%
+        );
+        color: white;
+      }
+
+      .occupied {
+        background: linear-gradient(
+          135deg,
+          var(--color-occupied) 0%,
+          #c62828 100%
+        );
+        color: white;
+      }
+
+      .error {
+        background: linear-gradient(
+          135deg,
+          var(--color-error) 0%,
+          #e65100 100%
+        );
+        color: white;
+      }
+
+      /* Phần nhật ký */
+      .log-section {
+        background: var(--color-card);
+        padding: 2rem;
+        border-radius: var(--border-radius-md);
+        box-shadow: var(--shadow-md);
+        margin-bottom: 2rem;
+        transition: all var(--transition-normal);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .log-section:hover {
+        box-shadow: var(--shadow-lg);
+      }
+
+      .log-section h2 {
+        color: var(--color-primary-dark);
+        margin-bottom: 1rem;
+        position: relative;
+        display: inline-block;
+      }
+
+      .log-section h2::after {
+        content: "";
+        position: absolute;
+        bottom: -5px;
+        left: 0;
+        width: 50px;
+        height: 3px;
+        background: var(--color-primary);
+        transition: width var(--transition-normal);
+      }
+
+      .log-section:hover h2::after {
+        width: 100%;
+      }
+
+      .log-list {
+        max-height: 350px;
+        overflow-y: auto;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: var(--border-radius-sm);
+        padding: 0.8rem;
+        margin-top: 1rem;
+        background-color: rgba(248, 249, 250, 0.5);
+        backdrop-filter: blur(5px);
+        scrollbar-width: thin;
+        scrollbar-color: var(--color-primary) transparent;
+      }
+
+      .log-list::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      .log-list::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .log-list::-webkit-scrollbar-thumb {
+        background-color: var(--color-primary);
+        border-radius: 20px;
+      }
+
+      .log-item {
+        padding: 12px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        font-family: "Roboto Mono", monospace;
+        transition: all var(--transition-fast);
+        border-radius: var(--border-radius-sm);
+      }
+
+      .log-item:hover {
+        background-color: rgba(33, 150, 243, 0.05);
+        transform: translateX(5px);
+      }
+
+      .log-item:last-child {
+        border-bottom: none;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 1.5rem;
+        color: var(--color-text-secondary);
+        font-style: italic;
+      }
+
+      /* Animations */
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      @keyframes fadeInDown {
+        from {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      /* Server connection status */
+      .connection-status {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        padding: 10px 15px;
+        border-radius: var(--border-radius-sm);
+        background-color: var(--color-card);
+        box-shadow: var(--shadow-md);
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        z-index: 1000;
+        transition: all var(--transition-normal);
+      }
+
+      .connection-status.online {
+        border-left: 4px solid var(--color-available);
+      }
+
+      .connection-status.offline {
+        border-left: 4px solid var(--color-occupied);
+      }
+
+      /* Responsive adjustments */
+      @media (max-width: 768px) {
+        .header {
+          padding: 1.5rem;
+          border-radius: 0 0 var(--border-radius-md) var(--border-radius-md);
+        }
+
+        .header h1 {
+          font-size: 1.8rem;
+        }
+
+        .slots {
+          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+          gap: 1rem;
+        }
+
+        .slot {
+          padding: 1.5rem;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .header h1 {
+          font-size: 1.5rem;
+        }
+
+        .header p {
+          font-size: 1rem;
+        }
+
+        .slot h2 {
+          font-size: 1.2rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1><i class="fas fa-parking"></i> BÃI ĐỖ XE THÔNG MINH NHÓM 8</h1>
+      <p>Tổng chỗ: 4 | Chỗ trống: <span id="free-slots">4</span></p>
+    </div>
+
+    <div class="container">
+      <!-- Phần hiển thị trạng thái của các slot -->
+      <div class="slots" id="slotsContainer">
+        <!-- Các slot sẽ được tạo động -->
+      </div>
+
+      <!-- Phần nhật ký hoạt động -->
+      <div class="log-section">
+        <h2><i class="fas fa-history"></i> NHẬT KÝ RA/VÀO</h2>
+        <div id="activity-logs" class="log-list">
+          <div class="loading">
+            <i class="fas fa-spinner fa-spin"></i> Đang tải nhật ký...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="connection-status" class="connection-status">
+      <i class="fas fa-circle"></i> <span>Đang kết nối...</span>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      // Cấu hình hệ thống
+      const CONFIG = {
+        TOTAL_SLOTS: 4,
+        UPDATE_INTERVAL: 5000, // Sẽ chỉ dùng khi không có Socket.IO
+      };
+
+      let lastUpdate = 0;
+      let socket;
+
+      /**
+       * Xác định màu hiển thị cho log dựa vào nội dung thông điệp.
+       */
+      function getLogColor(message) {
+        const lowerMsg = message.toLowerCase();
+
+        if (lowerMsg.includes("vao cong")) {
+          return "#e53935"; // Đỏ đậm hơn
+        } else if (lowerMsg.includes("ra cong")) {
+          return "#43a047"; // Xanh đậm hơn
+        } else if (
+          lowerMsg.includes("vao") &&
+          (lowerMsg.includes("slot") || lowerMsg.includes("vi tri"))
+        ) {
+          return "#e53935"; // Đỏ đậm hơn
+        } else if (
+          (lowerMsg.includes("ra") || lowerMsg.includes("khoi")) &&
+          (lowerMsg.includes("slot") || lowerMsg.includes("vi tri"))
+        ) {
+          return "#43a047"; // Xanh đậm hơn
+        }
+        return "#333"; // Màu mặc định nếu không khớp
+      }
+
+      // Khởi tạo giao diện cho các slot đỗ xe
+      function initSlots() {
+        const container = document.getElementById("slotsContainer");
+        for (let i = 1; i <= CONFIG.TOTAL_SLOTS; i++) {
+          const slotHTML = `
+          <div class="slot" data-slot="${i}">
+            <h2><i class="fas fa-car"></i> VỊ TRÍ ${i}</h2>
+            <div class="status loading">
+              <i class="fas fa-spinner fa-spin"></i> Đang kết nối...
+            </div>
+          </div>
+        `;
+          container.insertAdjacentHTML("beforeend", slotHTML);
+        }
+      }
+
+      // Cập nhật trạng thái của một slot
+      function updateSlot(slotNumber, status) {
+        const slotElem = document.querySelector(
+          `[data-slot="${slotNumber}"] .status`
+        );
+        if (!slotElem) return;
+
+        // Xác định class và icon dựa trên trạng thái
+        let statusClass, statusIcon, statusText;
+
+        if (status === true) {
+          statusClass = "occupied";
+          statusIcon = "fas fa-car";
+          statusText = "CÓ XE";
+        } else if (status === false) {
+          statusClass = "available";
+          statusIcon = "fas fa-check-circle";
+          statusText = "TRỐNG";
+        } else {
+          statusClass = "error";
+          statusIcon = "fas fa-exclamation-triangle";
+          statusText = "LỖI KẾT NỐI";
+        }
+
+        // Thêm hiệu ứng khi trạng thái thay đổi
+        if (slotElem.className !== `status ${statusClass}`) {
+          slotElem.style.animation = "pulse 0.5s";
+          setTimeout(() => {
+            slotElem.style.animation = "";
+          }, 500);
+        }
+
+        slotElem.className = `status ${statusClass}`;
+        slotElem.innerHTML = `<i class="${statusIcon}"></i> ${statusText}`;
+      }
+
+      // Cập nhật số chỗ trống ở header
+      function updateFreeSlots(status) {
+        const occupied = Object.values(status).filter((v) => v).length;
+        const freeSlots = CONFIG.TOTAL_SLOTS - occupied;
+        const freeSlotsElem = document.getElementById("free-slots");
+
+        // Thêm hiệu ứng khi số chỗ trống thay đổi
+        if (freeSlotsElem.textContent != freeSlots) {
+          freeSlotsElem.style.animation = "pulse 0.5s";
+          setTimeout(() => {
+            freeSlotsElem.style.animation = "";
+          }, 500);
+        }
+
+        freeSlotsElem.textContent = freeSlots;
+      }
+
+      // Thêm bản ghi log vào giao diện
+      function addLogToUI(log) {
+        const logContainer = document.getElementById("activity-logs");
+
+        // Xoá "Đang tải nhật ký..." nếu còn
+        if (logContainer.querySelector(".loading")) {
+          logContainer.innerHTML = "";
+        }
+
+        // Chuyển đổi định dạng của log nếu cần
+        const timeStr =
+          log.formatted || new Date(log.t * 1000).toLocaleTimeString("vi-VN");
+        const message = log.m || log.message || "";
+
+        // Lấy màu theo nội dung
+        const color = getLogColor(message);
+
+        // Xác định icon dựa vào nội dung
+        let icon = "fas fa-info-circle";
+        if (message.toLowerCase().includes("vao")) {
+          icon = "fas fa-sign-in-alt";
+        } else if (message.toLowerCase().includes("ra")) {
+          icon = "fas fa-sign-out-alt";
+        }
+
+        const logItem = document.createElement("div");
+        logItem.className = "log-item";
+        logItem.style.animation = "fadeIn 0.5s";
+        logItem.innerHTML = `
+          <span style="color: #666"><i class="far fa-clock"></i> ${timeStr}</span>
+          <span style="color: ${color}; margin-left: 8px;"><i class="${icon}"></i> ${message}</span>
+        `;
+        logContainer.prepend(logItem);
+
+        // Thêm hiệu ứng khi log mới xuất hiện
+        setTimeout(() => {
+          logItem.style.animation = "";
+        }, 500);
+
+        // Giới hạn số bản ghi tối đa 20
+        while (logContainer.children.length > 20) {
+          logContainer.removeChild(logContainer.lastChild);
+        }
+      }
+
+      // Cập nhật trạng thái kết nối
+      function updateConnectionStatus(status) {
+        const statusElem = document.getElementById("connection-status");
+        if (status === "connected") {
+          statusElem.className = "connection-status online";
+          statusElem.innerHTML =
+            '<i class="fas fa-circle" style="color: var(--color-available)"></i> <span>Đã kết nối</span>';
+          setTimeout(() => {
+            statusElem.style.opacity = "0.7";
+          }, 3000);
+        } else if (status === "connecting") {
+          statusElem.className = "connection-status";
+          statusElem.style.opacity = "1";
+          statusElem.innerHTML =
+            '<i class="fas fa-circle-notch fa-spin"></i> <span>Đang kết nối...</span>';
+        } else {
+          statusElem.className = "connection-status offline";
+          statusElem.style.opacity = "1";
+          statusElem.innerHTML =
+            '<i class="fas fa-circle" style="color: var(--color-occupied)"></i> <span>Mất kết nối</span>';
+        }
+      }
+
+      // Khởi tạo kết nối Socket.IO
+      function initSocketConnection() {
+        updateConnectionStatus("connecting");
+
+        socket = io();
+
+        socket.on("connect", () => {
+          console.log("Socket connected");
+          updateConnectionStatus("connected");
+        });
+
+        socket.on("disconnect", () => {
+          console.log("Socket disconnected");
+          updateConnectionStatus("disconnected");
+          // Chuyển sang polling khi socket bị mất kết nối
+          setTimeout(fetchDataFromAPI, 1000);
+        });
+
+        socket.on("statusUpdate", (status) => {
+          console.log("Status update received:", status);
+          updateParkingStatus(status);
+        });
+
+        socket.on("newLog", (log) => {
+          console.log("New log received:", log);
+          addLogToUI(log);
+          if (log.t > lastUpdate) {
+            lastUpdate = log.t;
+          }
+        });
+      }
+
+      // Hàm fetch dữ liệu từ API khi Socket.IO không khả dụng
+      async function fetchDataFromAPI() {
+        updateConnectionStatus("connecting");
+        try {
+          const [status, logs] = await Promise.all([
+            fetch("/api/status").then((r) => (r.ok ? r.json() : null)),
+            fetch(`/api/logs?since=${lastUpdate}`).then((r) =>
+              r.ok ? r.json() : []
+            ),
+          ]);
+
+          if (status) {
+            updateParkingStatus(status);
+            updateConnectionStatus("connected");
+          }
+
+          if (logs && logs.length > 0) {
+            logs.forEach((log) => addLogToUI(log));
+            // Cập nhật biến lastUpdate
+            const maxTimestamp = Math.max(...logs.map((log) => log.t));
+            if (maxTimestamp > lastUpdate) {
+              lastUpdate = maxTimestamp;
+            }
+          }
+
+          // Cập nhật lại định kỳ khi không dùng Socket.IO
+          setTimeout(fetchDataFromAPI, CONFIG.UPDATE_INTERVAL);
+        } catch (error) {
+          console.error("Error fetching API data:", error);
+          updateConnectionStatus("disconnected");
+          setTimeout(fetchDataFromAPI, CONFIG.UPDATE_INTERVAL);
+        }
+      }
+
+      // Cập nhật trạng thái bãi đỗ xe từ dữ liệu nhận được
+      function updateParkingStatus(status) {
+        if (!status) return;
+
+        for (let i = 1; i <= CONFIG.TOTAL_SLOTS; i++) {
+          updateSlot(i, status[`slot${i}`]);
+        }
+        updateFreeSlots(status);
+      }
+
+      // Khởi tạo ứng dụng
+      function init() {
+        initSlots();
+
+        // Thử kết nối với Socket.IO
+        try {
+          initSocketConnection();
+
+          // Lấy dữ liệu lịch sử ban đầu từ API
+          fetch("/api/logs")
+            .then((r) => (r.ok ? r.json() : []))
+            .then((logs) => {
+              if (logs && logs.length > 0) {
+                logs.forEach((log) => addLogToUI(log));
+                const maxTimestamp = Math.max(...logs.map((log) => log.t || 0));
+                if (maxTimestamp > lastUpdate) {
+                  lastUpdate = maxTimestamp;
+                }
+              }
+            })
+            .catch((err) => console.error("Error fetching initial logs:", err));
+        } catch (error) {
+          console.error("Error initializing socket:", error);
+          fetchDataFromAPI();
+        }
+
+        // Cảnh báo khi mất kết nối Internet
+        window.addEventListener("offline", () => {
+          updateConnectionStatus("disconnected");
+          alert("Mất kết nối Internet! Đang thử kết nối lại...");
+        });
+
+        window.addEventListener("online", () => {
+          if (socket && socket.connected) {
+            updateConnectionStatus("connected");
+          } else {
+            fetchDataFromAPI();
+          }
+        });
+      }
+
+      init();
+    </script>
+  </body>
+</html>

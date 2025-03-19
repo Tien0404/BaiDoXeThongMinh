@@ -1,0 +1,27 @@
+version: "3"
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      # Uncomment if using MongoDB
+      # - MONGODB_URI=mongodb://mongo:27017/parking
+    restart: always
+    # Uncomment the lines below if using MongoDB
+    # depends_on:
+    #   - mongo
+
+  # Uncomment the service below to include MongoDB
+  # mongo:
+  #   image: mongo:6
+  #   ports:
+  #     - "27017:27017"
+  #   volumes:
+  #     - mongo-data:/data/db
+  #   restart: always
+# Uncomment if using MongoDB
+# volumes:
+#   mongo-data:
