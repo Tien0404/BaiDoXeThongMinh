@@ -576,8 +576,22 @@
         }
 
         // Chuyển đổi định dạng của log nếu cần
-        const timeStr =
-          log.formatted || new Date(log.t * 1000).toLocaleTimeString("vi-VN");
+        let timeStr = log.formatted;
+
+        // Nếu không có formatted time, tạo từ timestamp
+        if (!timeStr && log.t) {
+          const logDate = new Date(log.t * 1000);
+
+          // Sử dụng Intl.DateTimeFormat để đảm bảo múi giờ +7
+          timeStr = new Intl.DateTimeFormat("vi-VN", {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hour12: false,
+            timeZone: "Asia/Ho_Chi_Minh",
+          }).format(logDate);
+        }
+
         const message = log.m || log.message || "";
 
         // Lấy màu theo nội dung
