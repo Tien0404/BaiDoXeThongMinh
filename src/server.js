@@ -127,11 +127,22 @@ app.get("/api/logs", async (req, res) => {
         .sort({ timestamp: -1 })
         .limit(20);
 
-      latestLogs = dbLogs.map((log) => ({
-        t: Math.floor(log.timestamp.getTime() / 1000),
-        formatted: log.timestamp.toLocaleTimeString("vi-VN"),
-        m: log.message,
-      }));
+      latestLogs = dbLogs.map((log) => {
+        // Tạo chuỗi thời gian định dạng theo múi giờ +7
+        const formattedTime = new Intl.DateTimeFormat("vi-VN", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: false,
+          timeZone: "Asia/Ho_Chi_Minh",
+        }).format(log.timestamp);
+
+        return {
+          t: Math.floor(log.timestamp.getTime() / 1000),
+          formatted: formattedTime,
+          m: log.message,
+        };
+      });
     } else if (latestLogs.length === 0) {
       // Return in-memory logs
       latestLogs = logs.filter((log) => log.t > since);
@@ -162,18 +173,40 @@ app.post("/api/update", (req, res) => {
       });
     } else {
       // In-memory storage
+      // Tạo đối tượng Date với múi giờ UTC
+      const logTime = new Date(log.timestamp * 1000);
+      // Tạo chuỗi thời gian định dạng theo múi giờ +7
+      const formattedTime = new Intl.DateTimeFormat("vi-VN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+        timeZone: "Asia/Ho_Chi_Minh",
+      }).format(logTime);
+
       logs.push({
         t: log.timestamp,
-        formatted: new Date(log.timestamp * 1000).toLocaleTimeString("vi-VN"),
+        formatted: formattedTime,
         m: log.message,
       });
       logs = logs.slice(-100); // Keep last 100 logs
     }
 
     // Emit new log to all connected clients
+    // Tạo đối tượng Date với múi giờ UTC
+    const logTime = new Date(log.timestamp * 1000);
+    // Tạo chuỗi thời gian định dạng theo múi giờ +7
+    const formattedTime = new Intl.DateTimeFormat("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+      timeZone: "Asia/Ho_Chi_Minh",
+    }).format(logTime);
+
     io.emit("newLog", {
       t: log.timestamp,
-      formatted: new Date(log.timestamp * 1000).toLocaleTimeString("vi-VN"),
+      formatted: formattedTime,
       m: log.message,
     });
   }
